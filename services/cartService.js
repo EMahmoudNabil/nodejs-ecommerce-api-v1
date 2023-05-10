@@ -20,30 +20,31 @@ const calcTotalCartPrice = (cart) => {
 // @access  Private/User
 exports.addProductToCart = asyncHandler(async (req, res, next) => {
   const { productId, color } = req.body;
+
+  // 1) Get the product
   const product = await Product.findById(productId);
 
-  // 1) Get Cart for logged user
+  // Check if the product exists
+  if (!product) {
+    return next(new ApiError(`Product with ID ${productId} not found`, 404));
+  }
+
+  // 2) Get the cart for the user
   let cart = await Cart.findOne({ user: req.user._id });
 
   if (!cart) {
-    // create cart fot logged user with product
+    // create cart for logged user with product
     cart = await Cart.create({
       user: req.user._id,
       cartItems: [{ product: productId, color, price: product.price }],
     });
   } else {
-    // product exist in cart, update product quantity
-    const productIndex = cart.cartItems.findIndex(
-      (item) => item.product.toString() === productId && item.color === color
-    );
+    // product exists in cart, update product quantity
+    const cartItem = cart.cartItems.find(item => item.product && item.product._id.toString() === productId && item.color === color);
 
-    if (productIndex > -1) {
-      const cartItem = cart.cartItems[productIndex];
+    if (cartItem && cartItem.quantity) {
       cartItem.quantity += 1;
-
-      cart.cartItems[productIndex] = cartItem;
     } else {
-      // product not exist in cart,  push product to cartItems array
       cart.cartItems.push({ product: productId, color, price: product.price });
     }
   }
@@ -64,9 +65,14 @@ exports.addProductToCart = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/cart
 // @access  Private/User
 exports.getLoggedUserCart = asyncHandler(async (req, res, next) => {
-  const cart = await Cart.findOne({ user: req.user._id });
-
-  if (!cart) {
+ 
+  const query = await Cart.findOne({ user: req.user._id });
+//   if (req.filterObj) {
+//     query = query.populate(req.filterObj);
+//   }
+// // 2) Execute query
+// const document = await query;
+  if (!query) {
     return next(
       new ApiError(`There is no cart for this user id : ${req.user._id}`, 404)
     );
@@ -74,8 +80,8 @@ exports.getLoggedUserCart = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    numOfCartItems: cart.cartItems.length,
-    data: cart,
+    numOfCartItems: query.cartItems.length,
+    data: query,
   });
 });
 

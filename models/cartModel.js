@@ -25,5 +25,12 @@ const cartSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+// Mongoose query middleware
+cartSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "cartItems.product",
+    select: "title imageCover images brand ratingsAverage",
+  });
+  next();
+});
 module.exports = mongoose.model('Cart', cartSchema);

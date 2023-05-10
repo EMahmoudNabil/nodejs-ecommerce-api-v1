@@ -24,6 +24,11 @@ dbConnection();
 // express app
 const app = express();
 
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000"); // set the allowed origin
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 // Allow requests from any origin
 // Enable other domains to access your application
 app.use(cors());
@@ -51,13 +56,16 @@ if (process.env.NODE_ENV === "development") {
 // Limit each IP to 100 requests per `window` (here, per 15 minutes)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 1000,
   message:
     "Too many accounts created from this IP, please try again after an hour",
 });
 
 // Apply the rate limiting middleware to all requests
 app.use("/api", limiter);
+
+
+
 
 // Middleware to protect against HTTP Parameter Pollution attacks
 app.use(
